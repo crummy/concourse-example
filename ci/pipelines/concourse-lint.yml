@@ -36,8 +36,7 @@ jobs:
   - get: git-repo
   - put: fly-docker-image
     params:
-      build: ci/docker
-      dockerfile: fly.Dockerfile
+      build: ci/docker/fly
 
 - name: lint
   plan:
