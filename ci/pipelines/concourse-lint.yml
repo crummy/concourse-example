@@ -1,0 +1,69 @@
+resource_types:
+- name: pull-request
+  type: docker-image
+  source:
+    repository: crummy/concourse-example
+
+resources:
+- name: pull-request
+  type: pull-request
+  check_every: 1m
+  webhook_token: ((webhook-token))
+  source:
+    repository: crummy/concourse-example
+    access_token: ((github-access-token))
+
+- name: git-repo
+  type: git
+  source:
+    uri: https://github.com/crummy/concourse-example.git
+    branch: master
+
+- name: fly-docker-image
+  type: docker-image
+  source:
+    email: ((docker-hub-email))
+    username: ((docker-hub-username))
+    password: ((docker-hub-password))
+    repository: ((docker-hub-username))/concourse-example
+
+
+jobs:
+- name: publish-fly-container
+  public: true
+  serial: true
+  plan:
+  - get: git-repo
+  - put: fly-docker-image
+    params:
+      build: ci/docker
+      dockerfile: fly.Dockerfile
+
+- name: lint
+  plan:
+  - get: pull-request
+    trigger: true
+    version: every
+  - put: pull-request
+    params:
+      path: pull-request
+      status: pending
+  - task: validate-pipeline
+    image: fly-docker-image
+    config:
+      platform: linux
+      inputs:
+        - name: pull-request
+        - name: fly-docker-image
+      run:
+        path: fly
+        args: ["validate-pipeline", "--config", "ci/pipelines/production-monitoring.yml"]
+    on_failure:
+      put: pull-request
+      params:
+        path: pull-request
+        status: failure
+  - put: pull-request
+    params:
+      path: pull-request
+      status: success
