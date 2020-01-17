@@ -1,0 +1,36 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+
+resources:
+  - name:  production-monitoring-check
+    type: time
+    icon: clock-outline
+    source:
+      interval: 60s
+  - name: notify_slack
+    type: slack-notification
+    source:
+      url: ((slack-webhook))
+
+jobs:
+  - name: job
+    public: true
+    plan:
+      - get: production-monitoring-check
+        trigger: true
+      - task: check-ok
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: { repository: busybox }
+          run:
+            path: wget
+            args: ["-q", "--spider", "https://www.malcolmcrum.com/fail"]
+        on_failure:
+          put: notify_slack
+          params:
+            text: "Production monitoring failed"
