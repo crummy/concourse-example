@@ -34,9 +34,21 @@ jobs:
   serial: true
   plan:
   - get: git-repo
+  - task: ls
+    config:
+      inputs:
+        - name: git-repo
+      image_resource:
+        type: docker-image
+        source:
+          repository: busybox
+      platform: linux
+      run:
+        path: ls
   - put: fly-docker-image
     params:
-      build: ci/docker/fly
+      build: git-repo/ci/docker/fly
+      dockerfile: git-repo/ci/docker/fly/Dockerfile
 
 - name: lint
   plan:
