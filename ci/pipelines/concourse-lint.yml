@@ -1,3 +1,5 @@
+invalid_top_level: yaml: is this allowed
+
 resource_types:
 - name: pull-request
   type: docker-image
