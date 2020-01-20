@@ -2,7 +2,7 @@ resource_types:
 - name: pull-request
   type: docker-image
   source:
-    repository: crummy/concourse-example
+    repository: teliaoss/github-pr-resource
 
 resources:
 - name: pull-request
@@ -59,22 +59,23 @@ jobs:
     params:
       path: pull-request
       status: pending
+  - get: fly-docker-image
   - task: validate-pipeline
     image: fly-docker-image
     config:
       platform: linux
       inputs:
         - name: pull-request
-        - name: fly-docker-image
       run:
         path: fly
-        args: ["validate-pipeline", "--config", "ci/pipelines/production-monitoring.yml"]
+        args: ["validate-pipeline", "--config", "pull-request/ci/pipelines/production-monitoring.yml"]
     on_failure:
       put: pull-request
       params:
         path: pull-request
         status: failure
-  - put: pull-request
-    params:
-      path: pull-request
-      status: success
+    on_success:
+      put: pull-request
+      params:
+        path: pull-request
+        status: success
